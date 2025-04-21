@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Merhaba Dünya</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        #merhaba-dunya {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            text-align: center;
+            font-size: 48px;
+            font-family: Arial, sans-serif;
+        }
+
+        .letter {
+            display: inline-block;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        /* Responsive tasarım */
+        @media (max-width: 768px) {
+            #merhaba-dunya {
+                font-size: 32px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            #merhaba-dunya {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="merhaba-dunya">
+        <span class="letter">M</span><span class="letter">e</span><span class="letter">r</span><span class="letter">h</span><span class="letter">a</span><span class="letter">b</span><span class="letter">a</span> <span class="letter">D</span><span class="letter">ü</span><span class="letter">n</span><span class="letter">y</span><span class="letter">a</span>
+    </div>
+    <script>
+        const explodedLetters = new Set();
+
+        // Harflere rastgele renk atama
+        document.addEventListener('DOMContentLoaded', () => {
+            const letters = document.querySelectorAll('.letter');
+            letters.forEach(letter => {
+                const randomColor = `#${Math.floor(Math.random()*16777215).toString(16)}`;
+                letter.style.color = randomColor;
+            });
+            startConfettiRain();
+        });
+
+        // Konfeti yağmuru
+        function startConfettiRain() {
+            setInterval(() => {
+                createConfetti(Math.random() * window.innerWidth, 0);
+            }, 100);
+        }
+
+        // Konfeti oluşturma
+        function createConfetti(x, y) {
+            const confetti = document.createElement('div');
+            confetti.className = 'confetti';
+            confetti.style.left = `${x}px`;
+            confetti.style.top = `${y}px`;
+            confetti.style.backgroundColor = `#${Math.floor(Math.random()*16777215).toString(16)}`;
+            document.body.appendChild(confetti);
+
+            let position = y;
+            const fall = setInterval(() => {
+                position += 5;
+                confetti.style.top = `${position}px`;
+                checkCollision(confetti);
+                if (position > window.innerHeight) {
+                    clearInterval(fall);
+                    confetti.remove();
+                }
+            }, 20);
+        }
+
+        // Çarpışma algılama
+        const letters = document.querySelectorAll('.letter');
+        function checkCollision(confetti) {
+            const confettiRect = confetti.getBoundingClientRect();
+            letters.forEach(letter => {
+                if (letter.style.display !== 'none') {
+                    const letterRect = letter.getBoundingClientRect();
+                    if (
+                        confettiRect.left < letterRect.right &&
+                        confettiRect.right > letterRect.left &&
+                        confettiRect.top < letterRect.bottom &&
+                        confettiRect.bottom > letterRect.top
+                    ) {
+                        confetti.style.top = `${parseFloat(confetti.style.top) - 10}px`;
+                    }
+                }
+            });
+        }
+
+        // Fare ile etkileşim
+        document.addEventListener('click', (event) => {
+            if (event.target.classList.contains('letter')) {
+                explodeLetter(event.target);
+            } else {
+                for (let i = 0; i < 10; i++) {
+                    createConfettiAt(event.clientX, event.clientY);
+                }
+            }
+        });
+
+        // Belirli bir noktada konfeti oluşturma
+        function createConfettiAt(x, y) {
+            const confetti = document.createElement('div');
+            confetti.className = 'confetti';
+            confetti.style.left = `${x}px`;
+            confetti.style.top = `${y}px`;
+            confetti.style.backgroundColor = `#${Math.floor(Math.random()*16777215).toString(16)}`;
+            document.body.appendChild(confetti);
+
+            let positionX = x;
+            let positionY = y;
+            let velocityX = (Math.random() - 0.5) * 10;
+            let velocityY = (Math.random() - 0.5) * 10;
+            const animate = setInterval(() => {
+                positionX += velocityX;
+                positionY += velocityY;
+                velocityY += 0.5; // Yerçekimi
+                confetti.style.left = `${positionX}px`;
+                confetti.style.top = `${positionY}px`;
+                if (positionY > window.innerHeight) {
+                    clearInterval(animate);
+                    confetti.remove();
+                }
+            }, 20);
+        }
+
+        // Harfi patlatma
+        function explodeLetter(letter) {
+            const rect = letter.getBoundingClientRect();
+            for (let i = 0; i < 20; i++) {
+                createConfettiAt(rect.left + rect.width / 2, rect.top + rect.height / 2);
+            }
+            letter.style.display = 'none';
+            explodedLetters.add(letter.textContent.toLowerCase());
+        }
+
+        // Klavye ile etkileşim
+        document.addEventListener('keydown', (event) => {
+            const key = event.key.toLowerCase();
+            if (explodedLetters.has(key)) {
+                letters.forEach(letter => {
+                    if (letter.textContent.toLowerCase() === key && letter.style.display === 'none') {
+                        letter.style.display = 'inline-block';
+                        explodedLetters.delete(key);
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

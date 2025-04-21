@@ -34,19 +34,8 @@
             position: absolute;
             width: 10px;
             height: 10px;
+            border-radius: 50%;
             pointer-events: none;
-        }
-
-        .confetti.square {
-            background-color: red;
-        }
-
-        .confetti.triangle {
-            width: 0;
-            height: 0;
-            border-left: 5px solid transparent;
-            border-right: 5px solid transparent;
-            border-bottom: 10px solid blue;
         }
 
         @media (max-width: 768px) {
@@ -65,6 +54,7 @@
     <script>
         const explodedLetters = new Set();
         const originalPositions = new Map();
+        const gravity = 0.5; // Yerçekimi ivmesi
 
         // Harflerin orijinal pozisyonlarını kaydetme ve renk atama
         document.addEventListener('DOMContentLoaded', () => {
@@ -80,69 +70,97 @@
         // Sürekli konfeti yağmuru
         function startConfettiRain() {
             setInterval(() => {
-                const shape = Math.random() < 0.5 ? 'square' : 'triangle';
-                createConfetti(Math.random() * window.innerWidth, 0, shape);
+                createConfetti(Math.random() * window.innerWidth, 0);
             }, 100);
         }
 
-        // Konfeti oluşturma ve düşürme
-        function createConfetti(x, y, shape) {
+        // Konfeti oluşturma ve hareket
+        function createConfetti(x, y) {
             const confetti = document.createElement('div');
-            confetti.className = `confetti ${shape}`;
+            confetti.className = 'confetti';
             confetti.style.left = `${x}px`;
             confetti.style.top = `${y}px`;
+            confetti.style.backgroundColor = `#${Math.floor(Math.random()*16777215).toString(16)}`;
             document.body.appendChild(confetti);
 
-            let position = y;
-            const fall = setInterval(() => {
-                position += 5;
-                confetti.style.top = `${position}px`;
-                if (position > window.innerHeight) {
-                    clearInterval(fall);
+            let positionX = x;
+            let positionY = y;
+            let velocityX = (Math.random() - 0.5) * 5; // Rastgele yatay hız
+            let velocityY = Math.random() * 5; // Rastgele dikey hız
+
+            const animate = setInterval(() => {
+                velocityY += gravity; // Yerçekimi etkisi
+                positionX += velocityX;
+                positionY += velocityY;
+                confetti.style.left = `${positionX}px`;
+                confetti.style.top = `${positionY}px`;
+
+                const collision = checkCollision(confetti);
+                if (collision) {
+                    velocityY = -velocityY * 0.7; // Sekme ve enerji kaybı
+                }
+
+                if (positionY > window.innerHeight) {
+                    clearInterval(animate);
                     confetti.remove();
                 }
             }, 20);
         }
 
-        // Sayfanın boş yerine tıklandığında konfeti patlaması
+        // Çarpışma kontrolü
+        const letters = document.querySelectorAll('.letter');
+        function checkCollision(confetti) {
+            const confettiRect = confetti.getBoundingClientRect();
+            for (let letter of letters) {
+                if (letter.style.display !== 'none') {
+                    const letterRect = letter.getBoundingClientRect();
+                    if (
+                        confettiRect.left < letterRect.right &&
+                        confettiRect.right > letterRect.left &&
+                        confettiRect.top < letterRect.bottom &&
+                        confettiRect.bottom > letterRect.top
+                    ) {
+                        return true; // Çarpışma var
+                    }
+                }
+            }
+            return false;
+        }
+
+        // Harfi patlatma
         document.addEventListener('click', (event) => {
             if (event.target.classList.contains('letter')) {
                 explodeLetter(event.target);
-            } else {
-                for (let i = 0; i < 20; i++) {
-                    const shape = Math.random() < 0.5 ? 'square' : 'triangle';
-                    createConfettiAt(event.clientX, event.clientY, shape);
-                }
             }
         });
 
-        // Harfi patlatma
         function explodeLetter(letter) {
             const rect = letter.getBoundingClientRect();
             for (let i = 0; i < 20; i++) {
-                const shape = Math.random() < 0.5 ? 'square' : 'triangle';
-                createConfettiAt(rect.left + rect.width / 2, rect.top + rect.height / 2, shape);
+                createConfettiAt(rect.left + rect.width / 2, rect.top + rect.height / 2);
             }
             letter.style.display = 'none';
             explodedLetters.add(letter.textContent.toLowerCase());
         }
 
-        // Belirli bir noktada konfeti oluşturma (patlama efekti)
-        function createConfettiAt(x, y, shape) {
+        // Belirli bir noktada konfeti oluşturma
+        function createConfettiAt(x, y) {
             const confetti = document.createElement('div');
-            confetti.className = `confetti ${shape}`;
+            confetti.className = 'confetti';
             confetti.style.left = `${x}px`;
             confetti.style.top = `${y}px`;
+            confetti.style.backgroundColor = `#${Math.floor(Math.random()*16777215).toString(16)}`;
             document.body.appendChild(confetti);
 
             let positionX = x;
             let positionY = y;
             let velocityX = (Math.random() - 0.5) * 10;
             let velocityY = (Math.random() - 0.5) * 10;
+
             const animate = setInterval(() => {
+                velocityY += gravity; // Yerçekimi
                 positionX += velocityX;
                 positionY += velocityY;
-                velocityY += 0.5; // Yerçekimi
                 confetti.style.left = `${positionX}px`;
                 confetti.style.top = `${positionY}px`;
                 if (positionY > window.innerHeight) {

@@ -27,6 +27,7 @@
             display: inline-block;
             transition: all 0.3s ease;
             cursor: pointer;
+            position: relative;
         }
 
         .confetti {
@@ -57,65 +58,20 @@
     </div>
     <script>
         const explodedLetters = new Set();
+        const originalPositions = new Map();
 
-        // Harflere rastgele renk atama
+        // Harflere rastgele renk atama ve orijinal pozisyonları kaydetme
         document.addEventListener('DOMContentLoaded', () => {
             const letters = document.querySelectorAll('.letter');
             letters.forEach(letter => {
                 const randomColor = `#${Math.floor(Math.random()*16777215).toString(16)}`;
                 letter.style.color = randomColor;
+                const rect = letter.getBoundingClientRect();
+                originalPositions.set(letter, { top: rect.top, left: rect.left });
             });
-            startConfettiRain();
         });
 
-        // Konfeti yağmuru
-        function startConfettiRain() {
-            setInterval(() => {
-                createConfetti(Math.random() * window.innerWidth, 0);
-            }, 100);
-        }
-
-        // Konfeti oluşturma
-        function createConfetti(x, y) {
-            const confetti = document.createElement('div');
-            confetti.className = 'confetti';
-            confetti.style.left = `${x}px`;
-            confetti.style.top = `${y}px`;
-            confetti.style.backgroundColor = `#${Math.floor(Math.random()*16777215).toString(16)}`;
-            document.body.appendChild(confetti);
-
-            let position = y;
-            const fall = setInterval(() => {
-                position += 5;
-                confetti.style.top = `${position}px`;
-                checkCollision(confetti);
-                if (position > window.innerHeight) {
-                    clearInterval(fall);
-                    confetti.remove();
-                }
-            }, 20);
-        }
-
-        // Çarpışma algılama
-        const letters = document.querySelectorAll('.letter');
-        function checkCollision(confetti) {
-            const confettiRect = confetti.getBoundingClientRect();
-            letters.forEach(letter => {
-                if (letter.style.display !== 'none') {
-                    const letterRect = letter.getBoundingClientRect();
-                    if (
-                        confettiRect.left < letterRect.right &&
-                        confettiRect.right > letterRect.left &&
-                        confettiRect.top < letterRect.bottom &&
-                        confettiRect.bottom > letterRect.top
-                    ) {
-                        confetti.style.top = `${parseFloat(confetti.style.top) - 10}px`;
-                    }
-                }
-            });
-        }
-
-        // Fare ile etkileşim
+        // Fare ile etkileşim: Harfi patlatma
         document.addEventListener('click', (event) => {
             if (event.target.classList.contains('letter')) {
                 explodeLetter(event.target);
@@ -125,6 +81,16 @@
                 }
             }
         });
+
+        // Harfi patlatma ve konfeti oluşturma
+        function explodeLetter(letter) {
+            const rect = letter.getBoundingClientRect();
+            for (let i = 0; i < 20; i++) {
+                createConfettiAt(rect.left + rect.width / 2, rect.top + rect.height / 2);
+            }
+            letter.style.display = 'none';
+            explodedLetters.add(letter.textContent.toLowerCase());
+        }
 
         // Belirli bir noktada konfeti oluşturma
         function createConfettiAt(x, y) {
@@ -142,7 +108,7 @@
             const animate = setInterval(() => {
                 positionX += velocityX;
                 positionY += velocityY;
-                velocityY += 0.5; // Yerçekimi
+                velocityY += 0.5; // Yerçekimi etkisi
                 confetti.style.left = `${positionX}px`;
                 confetti.style.top = `${positionY}px`;
                 if (positionY > window.innerHeight) {
@@ -152,23 +118,34 @@
             }, 20);
         }
 
-        // Harfi patlatma
-        function explodeLetter(letter) {
-            const rect = letter.getBoundingClientRect();
-            for (let i = 0; i < 20; i++) {
-                createConfettiAt(rect.left + rect.width / 2, rect.top + rect.height / 2);
-            }
-            letter.style.display = 'none';
-            explodedLetters.add(letter.textContent.toLowerCase());
+        // Harfi animasyonla düşürme
+        function dropLetter(letter) {
+            const originalPos = originalPositions.get(letter);
+            letter.style.position = 'absolute';
+            letter.style.left = `${originalPos.left}px`;
+            letter.style.top = `0px`;
+            letter.style.display = 'inline-block';
+            let position = 0;
+            const fall = setInterval(() => {
+                position += 5;
+                letter.style.top = `${position}px`;
+                if (position >= originalPos.top) {
+                    clearInterval(fall);
+                    letter.style.top = `${originalPos.top}px`;
+                    letter.style.position = 'relative';
+                    letter.style.left = 'auto';
+                }
+            }, 20);
         }
 
-        // Klavye ile etkileşim
+        // Klavye ile etkileşim: Harfi düşürme
         document.addEventListener('keydown', (event) => {
             const key = event.key.toLowerCase();
             if (explodedLetters.has(key)) {
+                const letters = document.querySelectorAll('.letter');
                 letters.forEach(letter => {
                     if (letter.textContent.toLowerCase() === key && letter.style.display === 'none') {
-                        letter.style.display = 'inline-block';
+                        dropLetter(letter);
                         explodedLetters.delete(key);
                     }
                 });

@@ -34,8 +34,19 @@
             position: absolute;
             width: 10px;
             height: 10px;
-            border-radius: 50%;
             pointer-events: none;
+        }
+
+        .confetti.square {
+            background-color: red;
+        }
+
+        .confetti.triangle {
+            width: 0;
+            height: 0;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-bottom: 10px solid blue;
         }
 
         @media (max-width: 768px) {
@@ -49,7 +60,7 @@
 </head>
 <body>
     <div id="merhaba-dunya">
-        <span class="letter">M</span><span class="letter">e</span><span class="letter">r</span><span class="letter">h</span><span class="letter">a</span><span class="letter">b</span><span class="letter">a</span> <span class="letter">D</span><span class="letter">ü</span><span class="letter">n</span><span class Smy="letter">y</span><span class="letter">a</span>
+        <span class="letter">M</span><span class="letter">e</span><span class="letter">r</span><span class="letter">h</span><span class="letter">a</span><span class="letter">b</span><span class="letter">a</span> <span class="letter">D</span><span class="letter">ü</span><span class="letter">n</span><span class="letter">y</span><span class="letter">a</span>
     </div>
     <script>
         const explodedLetters = new Set();
@@ -69,77 +80,59 @@
         // Sürekli konfeti yağmuru
         function startConfettiRain() {
             setInterval(() => {
-                createConfetti(Math.random() * window.innerWidth, 0);
+                const shape = Math.random() < 0.5 ? 'square' : 'triangle';
+                createConfetti(Math.random() * window.innerWidth, 0, shape);
             }, 100);
         }
 
         // Konfeti oluşturma ve düşürme
-        function createConfetti(x, y) {
+        function createConfetti(x, y, shape) {
             const confetti = document.createElement('div');
-            confetti.className = 'confetti';
+            confetti.className = `confetti ${shape}`;
             confetti.style.left = `${x}px`;
             confetti.style.top = `${y}px`;
-            confetti.style.backgroundColor = `#${Math.floor(Math.random()*16777215).toString(16)}`;
             document.body.appendChild(confetti);
 
             let position = y;
-            let velocity = 5; // Düşme hızı
             const fall = setInterval(() => {
-                position += velocity;
+                position += 5;
                 confetti.style.top = `${position}px`;
-                const collision = checkCollision(confetti);
-                if (collision) {
-                    velocity = -5; // Yukarı sekme
-                } else if (position > window.innerHeight) {
+                if (position > window.innerHeight) {
                     clearInterval(fall);
                     confetti.remove();
                 }
             }, 20);
         }
 
-        // Çarpışma kontrolü
-        const letters = document.querySelectorAll('.letter');
-        function checkCollision(confetti) {
-            const confettiRect = confetti.getBoundingClientRect();
-            for (let letter of letters) {
-                if (letter.style.display !== 'none') {
-                    const letterRect = letter.getBoundingClientRect();
-                    if (
-                        confettiRect.left < letterRect.right &&
-                        confettiRect.right > letterRect.left &&
-                        confettiRect.top < letterRect.bottom &&
-                        confettiRect.bottom > letterRect.top
-                    ) {
-                        return true; // Çarpışma var
-                    }
-                }
-            }
-            return false;
-        }
-
-        // Harfi patlatma
+        // Sayfanın boş yerine tıklandığında konfeti patlaması
         document.addEventListener('click', (event) => {
             if (event.target.classList.contains('letter')) {
                 explodeLetter(event.target);
+            } else {
+                for (let i = 0; i < 20; i++) {
+                    const shape = Math.random() < 0.5 ? 'square' : 'triangle';
+                    createConfettiAt(event.clientX, event.clientY, shape);
+                }
             }
         });
 
+        // Harfi patlatma
         function explodeLetter(letter) {
             const rect = letter.getBoundingClientRect();
             for (let i = 0; i < 20; i++) {
-                createConfettiAt(rect.left + rect.width / 2, rect.top + rect.height / 2);
+                const shape = Math.random() < 0.5 ? 'square' : 'triangle';
+                createConfettiAt(rect.left + rect.width / 2, rect.top + rect.height / 2, shape);
             }
             letter.style.display = 'none';
             explodedLetters.add(letter.textContent.toLowerCase());
         }
 
-        // Belirli bir noktada konfeti oluşturma
-        function createConfettiAt(x, y) {
+        // Belirli bir noktada konfeti oluşturma (patlama efekti)
+        function createConfettiAt(x, y, shape) {
             const confetti = document.createElement('div');
-            confetti.className = 'confetti';
+            confetti.className = `confetti ${shape}`;
             confetti.style.left = `${x}px`;
             confetti.style.top = `${y}px`;
-            confetti.style.backgroundColor = `#${Math.floor(Math.random()*16777215).toString(16)}`;
             document.body.appendChild(confetti);
 
             let positionX = x;

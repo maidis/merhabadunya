@@ -38,51 +38,92 @@
             pointer-events: none;
         }
 
-        /* Responsive tasarım */
         @media (max-width: 768px) {
-            #merhaba-dunya {
-                font-size: 32px;
-            }
+            #merhaba-dunya { font-size: 32px; }
         }
 
         @media (max-width: 480px) {
-            #merhaba-dunya {
-                font-size: 24px;
-            }
+            #merhaba-dunya { font-size: 24px; }
         }
     </style>
 </head>
 <body>
     <div id="merhaba-dunya">
-        <span class="letter">M</span><span class="letter">e</span><span class="letter">r</span><span class="letter">h</span><span class="letter">a</span><span class="letter">b</span><span class="letter">a</span> <span class="letter">D</span><span class="letter">ü</span><span class="letter">n</span><span class="letter">y</span><span class="letter">a</span>
+        <span class="letter">M</span><span class="letter">e</span><span class="letter">r</span><span class="letter">h</span><span class="letter">a</span><span class="letter">b</span><span class="letter">a</span> <span class="letter">D</span><span class="letter">ü</span><span class="letter">n</span><span class Smy="letter">y</span><span class="letter">a</span>
     </div>
     <script>
         const explodedLetters = new Set();
         const originalPositions = new Map();
 
-        // Harflere rastgele renk atama ve orijinal pozisyonları kaydetme
+        // Harflerin orijinal pozisyonlarını kaydetme ve renk atama
         document.addEventListener('DOMContentLoaded', () => {
             const letters = document.querySelectorAll('.letter');
             letters.forEach(letter => {
-                const randomColor = `#${Math.floor(Math.random()*16777215).toString(16)}`;
-                letter.style.color = randomColor;
+                letter.style.color = `#${Math.floor(Math.random()*16777215).toString(16)}`;
                 const rect = letter.getBoundingClientRect();
                 originalPositions.set(letter, { top: rect.top, left: rect.left });
             });
+            startConfettiRain();
         });
 
-        // Fare ile etkileşim: Harfi patlatma
+        // Sürekli konfeti yağmuru
+        function startConfettiRain() {
+            setInterval(() => {
+                createConfetti(Math.random() * window.innerWidth, 0);
+            }, 100);
+        }
+
+        // Konfeti oluşturma ve düşürme
+        function createConfetti(x, y) {
+            const confetti = document.createElement('div');
+            confetti.className = 'confetti';
+            confetti.style.left = `${x}px`;
+            confetti.style.top = `${y}px`;
+            confetti.style.backgroundColor = `#${Math.floor(Math.random()*16777215).toString(16)}`;
+            document.body.appendChild(confetti);
+
+            let position = y;
+            let velocity = 5; // Düşme hızı
+            const fall = setInterval(() => {
+                position += velocity;
+                confetti.style.top = `${position}px`;
+                const collision = checkCollision(confetti);
+                if (collision) {
+                    velocity = -5; // Yukarı sekme
+                } else if (position > window.innerHeight) {
+                    clearInterval(fall);
+                    confetti.remove();
+                }
+            }, 20);
+        }
+
+        // Çarpışma kontrolü
+        const letters = document.querySelectorAll('.letter');
+        function checkCollision(confetti) {
+            const confettiRect = confetti.getBoundingClientRect();
+            for (let letter of letters) {
+                if (letter.style.display !== 'none') {
+                    const letterRect = letter.getBoundingClientRect();
+                    if (
+                        confettiRect.left < letterRect.right &&
+                        confettiRect.right > letterRect.left &&
+                        confettiRect.top < letterRect.bottom &&
+                        confettiRect.bottom > letterRect.top
+                    ) {
+                        return true; // Çarpışma var
+                    }
+                }
+            }
+            return false;
+        }
+
+        // Harfi patlatma
         document.addEventListener('click', (event) => {
             if (event.target.classList.contains('letter')) {
                 explodeLetter(event.target);
-            } else {
-                for (let i = 0; i < 10; i++) {
-                    createConfettiAt(event.clientX, event.clientY);
-                }
             }
         });
 
-        // Harfi patlatma ve konfeti oluşturma
         function explodeLetter(letter) {
             const rect = letter.getBoundingClientRect();
             for (let i = 0; i < 20; i++) {
@@ -108,7 +149,7 @@
             const animate = setInterval(() => {
                 positionX += velocityX;
                 positionY += velocityY;
-                velocityY += 0.5; // Yerçekimi etkisi
+                velocityY += 0.5; // Yerçekimi
                 confetti.style.left = `${positionX}px`;
                 confetti.style.top = `${positionY}px`;
                 if (positionY > window.innerHeight) {
@@ -118,7 +159,7 @@
             }, 20);
         }
 
-        // Harfi animasyonla düşürme
+        // Harfi düşürme animasyonu
         function dropLetter(letter) {
             const originalPos = originalPositions.get(letter);
             letter.style.position = 'absolute';
@@ -138,11 +179,10 @@
             }, 20);
         }
 
-        // Klavye ile etkileşim: Harfi düşürme
+        // Klavye ile harf düşürme
         document.addEventListener('keydown', (event) => {
             const key = event.key.toLowerCase();
             if (explodedLetters.has(key)) {
-                const letters = document.querySelectorAll('.letter');
                 letters.forEach(letter => {
                     if (letter.textContent.toLowerCase() === key && letter.style.display === 'none') {
                         dropLetter(letter);
